@@ -1,118 +1,45 @@
-import Parser from "rss-parser";
+export const dynamic = "force-static";
 
-const parser = new Parser();
-
-const FEED_SOURCES = [
-  {
-    name: "UN News",
-    url: "https://news.un.org/feed/subscribe/en/news/topic/climate-change/feed/rss.xml",
-  },
-  {
-    name: "Guardian Environment",
-    url: "https://www.theguardian.com/environment/rss",
-  },
-  {
-    name: "WWF Climate",
-    url: "https://wwf.panda.org/rss/feeds/publications/"
-  },
-  {
-    name: "ScienceDaily Environment",
-    url: "https://www.sciencedaily.com/rss/top/environment.xml",
-  },
-  {
-    name: "UN Climate Change",
-    url: "https://unfccc.int/rss.xml",
-  },
-  {
-    name: "NASA Climate",
-    url: "https://climate.nasa.gov/news/rss.xml",
-  },
-  {
-    name: "BBC Climate / Environment",
-    url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
-  },
-  {
-    name: "Yale Environment 360",
-    url: "https://e360.yale.edu/feed",
-  },
-  {
-    name: "Mongabay Environment",
-    url: "https://news.mongabay.com/feed/",
-  },
-  {
-    name: "WWF News",
-    url: "https://wwf.panda.org/rss/feeds/publications/",
-  },
-];
-
-// keywords to filter
-const KEYWORDS = [
-  "carbon footprint",
-  "eco-friendly",
-  "eco friendly",
-  "sustainable",
-  "renewable",
-  "green energy",
-  "environment friendly",
-  "emissions",
-  "net zero",
-  "recycling",
-  "clean energy",
-  "climate change",
-  "weather conditions",
-];
+import clientPromise from "../../../dbConnect";
 
 export async function GET() {
   try {
-    const allFeeds = await Promise.all(
-      FEED_SOURCES.map(async (src) => {
-        try {
-          const feed = await parser.parseURL(src.url);
-          return {
-            name: src.name,
-            items: feed.items || [],
-          };
-        } catch (err) {
-          console.error("Error parsing feed", src.name, err);
-          return {
-            name: src.name,
-            items: [],
-          };
-        }
-      })
-    );
+    const client = await clientPromise;
+    const db = client.db("carbo");
 
-    // Combine items, tag source
-    let combinedItems = [];
-    allFeeds.forEach((f) => {
-      f.items.forEach((item) => {
-        combinedItems.push({
-          title: item.title,
-          link: item.link,
-          contentSnippet: item.contentSnippet,
-          pubDate: item.pubDate,
-          enclosure: { url: item.enclosure?.url || null },
-          sourceName: f.name,
-        });
-      });
-    });
+    // Get cached news from database
+    const cachedNews = await db.collection("news_cache")
+      .find({})
+      .sort({ pubDate: -1 }) // Sort by newest first
+      .limit(50) // Limit to 50 items
+      .toArray();
 
-    // Filter by keywords
-    const filtered = combinedItems.filter((item) => {
-      const text = (item.title + " " + (item.contentSnippet || "")).toLowerCase();
-      return KEYWORDS.some((kw) => text.includes(kw.toLowerCase()));
-    });
-
+    // Format the response to match the expected structure
     const formattedFeed = {
-      items: filtered.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate)),  // sort newest first
+      items: cachedNews.map(item => ({
+        title: item.title,
+        link: item.link,
+        contentSnippet: item.contentSnippet,
+        pubDate: item.pubDate,
+        enclosure: item.enclosure,
+        sourceName: item.sourceName
+      }))
     };
 
     return new Response(JSON.stringify(formattedFeed), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" // Cache for 1 hour, serve stale for 24 hours
+      },
     });
   } catch (error) {
-    console.error("Error fetching multiple feeds:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch feeds" }), { status: 500 });
+    console.error("Error fetching cached news:", error);
+
+    // Fallback to empty response if database fails
+    return new Response(JSON.stringify({ items: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

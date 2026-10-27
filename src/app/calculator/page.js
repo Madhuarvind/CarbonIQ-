@@ -38,6 +38,8 @@ const CarbonFootprintCalculator = () => {
 
 	const [dailySuggestion, setDailySuggestion] = useState(null);
 	const [suggestionCategory, setSuggestionCategory] = useState(null);
+	const [personalizedPlan, setPersonalizedPlan] = useState(null);
+	const [generatingPlan, setGeneratingPlan] = useState(false);
 
 	useEffect(() => {
 		if (showResults && Object.keys(categoryEmissions).length > 0) {
@@ -175,6 +177,41 @@ const CarbonFootprintCalculator = () => {
 			console.log('Data saved successfully:', result);
 		} catch (error) {
 			console.error('An error occurred while saving data:', error);
+		}
+	};
+
+	const generatePersonalizedPlan = async () => {
+		if (!user?.id) {
+			alert('Please sign in to generate a personalized plan');
+			return;
+		}
+
+		try {
+			setGeneratingPlan(true);
+			const response = await fetch('/api/personalized_plan', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					userData: {
+						totalEmissions: Math.round(totalEmissions),
+					},
+					categories: categoryEmissions,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				alert(error.error || 'Failed to generate personalized plan');
+				return;
+			}
+
+			const result = await response.json();
+			setPersonalizedPlan(result.personalizedPlan);
+		} catch (error) {
+			console.error('Error generating personalized plan:', error);
+			alert('Failed to generate personalized plan');
+		} finally {
+			setGeneratingPlan(false);
 		}
 	};
 
@@ -499,17 +536,103 @@ const CarbonFootprintCalculator = () => {
 								</Card>
 							)}
 
-							{/* Calculate Again Button */}
-							<button
-								onClick={() => {
-									setShowResults(false);
-									setCurrentCategory(0);
-									setAnswers({});
-								}}
-								className='w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-md font-medium shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 hover:translate-y-1 flex items-center justify-center gap-2 group'
-							>
-								Calculate Again
-							</button>
+							{/* Action Buttons */}
+							<div className='flex flex-col sm:flex-row gap-4'>
+								<button
+									onClick={() => {
+										setShowResults(false);
+										setCurrentCategory(0);
+										setAnswers({});
+									}}
+									className='flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-md font-medium shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 hover:translate-y-1 flex items-center justify-center gap-2 group'
+								>
+									Calculate Again
+								</button>
+								<button
+									onClick={generatePersonalizedPlan}
+									disabled={generatingPlan}
+									className='flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md font-medium shadow-lg hover:shadow-blue-500/20 transition-all duration-300 hover:translate-y-1 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed'
+								>
+									{generatingPlan ? 'Generating AI Plan...' : 'Get AI Personalized Plan'}
+								</button>
+							</div>
+
+							{/* Personalized Plan Display */}
+							{personalizedPlan && (
+								<Card className='bg-blue-900/30 border border-blue-500/30 shadow-lg overflow-hidden'>
+									<CardContent className='p-6'>
+										<div className='flex items-center gap-2 mb-6'>
+											<Flame className='w-6 h-6 text-blue-400' />
+											<h3 className='text-xl font-bold text-blue-400'>
+												{personalizedPlan.planTitle}
+											</h3>
+										</div>
+
+										<div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+											<div className='bg-slate-800/50 p-4 rounded-lg'>
+												<p className='text-sm text-gray-400'>Potential Reduction</p>
+												<p className='text-2xl font-bold text-blue-400'>
+													{personalizedPlan.totalReductionPotential} kg CO₂
+												</p>
+											</div>
+											<div className='bg-slate-800/50 p-4 rounded-lg'>
+												<p className='text-sm text-gray-400'>Plan Duration</p>
+												<p className='text-2xl font-bold text-blue-400'>30 Days</p>
+											</div>
+										</div>
+
+										<div className='space-y-4 mb-6'>
+											<h4 className='text-lg font-semibold text-white'>Weekly Action Plan</h4>
+											{personalizedPlan.plan.map((week, index) => (
+												<div key={index} className='bg-slate-800/50 p-4 rounded-lg'>
+													<h5 className='text-lg font-medium text-blue-400 mb-2'>
+														Week {week.week}: {week.focus}
+													</h5>
+													<p className='text-sm text-gray-300 mb-3'>{week.weeklyGoal}</p>
+													<div className='space-y-2'>
+														{week.actions.map((action, actionIndex) => (
+															<div key={actionIndex} className='flex items-start gap-3 p-3 bg-slate-700/50 rounded-md'>
+																<div className={`w-2 h-2 rounded-full mt-2 ${
+																	action.difficulty === 'Easy' ? 'bg-green-400' :
+																	action.difficulty === 'Medium' ? 'bg-yellow-400' : 'bg-red-400'
+																}`}></div>
+																<div className='flex-1'>
+																	<p className='text-sm text-white font-medium'>{action.action}</p>
+																	<p className='text-xs text-gray-400'>
+																		Impact: {action.impact} | Category: {action.category}
+																	</p>
+																</div>
+															</div>
+														))}
+													</div>
+												</div>
+											))}
+										</div>
+
+										{personalizedPlan.longTermRecommendations && personalizedPlan.longTermRecommendations.length > 0 && (
+											<div className='mb-6'>
+												<h4 className='text-lg font-semibold text-white mb-3'>Long-term Recommendations</h4>
+												<ul className='space-y-2'>
+													{personalizedPlan.longTermRecommendations.map((rec, index) => (
+														<li key={index} className='flex items-start gap-2 text-sm text-gray-300'>
+															<span className='text-blue-400 mt-1'>•</span>
+															{rec}
+														</li>
+													))}
+												</ul>
+											</div>
+										)}
+
+										{personalizedPlan.motivationalMessage && (
+											<div className='bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg'>
+												<p className='text-blue-300 italic text-center'>
+													"{personalizedPlan.motivationalMessage}"
+												</p>
+											</div>
+										)}
+									</CardContent>
+								</Card>
+							)}
 						</div>
 					)}
 				</div>

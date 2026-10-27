@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import carbonFactors from '../../data/carbonFactors.json';

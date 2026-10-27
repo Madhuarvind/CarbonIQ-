@@ -1,3 +1,5 @@
+
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
@@ -11,6 +13,10 @@ import CarbonGauge from './DounutChart';
 import LineChart from './LineChart';
 import RadarChart from './RadarChart';
 import Leaderboard from './Leaderboard';
+import PredictiveChart from './PredictiveChart';
+import EnvironmentalWidget from '../../components/EnvironmentalWidget';
+import AchievementSystem from '../../components/AchievementSystem';
+import ChallengeHub from '../../components/ChallengeHub';
 import { Tab } from '@headlessui/react';
 import {
 	FaLeaf,
@@ -22,6 +28,8 @@ import {
 	FaRadar,
 	FaBalanceScale,
 	FaTrophy,
+	FaBrain,
+	FaCloud,
 } from 'react-icons/fa';
 
 Chart.register(CategoryScale);
@@ -73,8 +81,8 @@ export default function UserProfile() {
 
 				{/* Dashboard Content */}
 				<Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-					<Tab.List className='flex space-x-1 rounded-xl bg-slate-800/50 p-1 mb-6'>
-						{['Overview', 'Charts', 'Comparison', 'Leaderboard'].map(
+				<Tab.List className='flex space-x-1 rounded-xl bg-slate-800/50 p-1 mb-6'>
+						{['Overview', 'Charts', 'Comparison', 'Leaderboard', 'Predictive', 'Environment', 'Achievements', 'Challenges', 'Analytics', 'AI Tools'].map(
 							(category, idx) => (
 								<Tab
 									key={idx}
@@ -198,6 +206,44 @@ export default function UserProfile() {
 						{/* Leaderboard Tab */}
 						<Tab.Panel className={`rounded-xl bg-slate-800/50 p-3`}>
 							<Leaderboard clerkId={user?.id} refresh={refresh} />
+						</Tab.Panel>
+
+						{/* Predictive Tab */}
+						<Tab.Panel className={`rounded-xl bg-slate-800/50 p-3`}>
+							<PredictiveChart refresh={refresh} />
+						</Tab.Panel>
+
+						{/* Environment Tab */}
+						<Tab.Panel className={`rounded-xl bg-slate-800/50 p-3`}>
+							<div className='space-y-6'>
+								<div className='text-center mb-6'>
+									<h2 className='text-2xl font-bold text-white mb-2'>Real-Time Environmental Dashboard</h2>
+									<p className='text-gray-400'>Monitor local environmental conditions and their impact on your carbon footprint</p>
+								</div>
+								<EnvironmentalWidget clerkId={user?.id} />
+							</div>
+						</Tab.Panel>
+
+						{/* Achievements Tab */}
+						<Tab.Panel className={`rounded-xl bg-slate-800/50 p-3`}>
+							<div className='space-y-6'>
+								<div className='text-center mb-6'>
+									<h2 className='text-2xl font-bold text-white mb-2'>Achievements</h2>
+									<p className='text-gray-400'>Track your progress and milestones</p>
+								</div>
+								<AchievementSystem />
+							</div>
+						</Tab.Panel>
+
+						{/* Challenges Tab */}
+						<Tab.Panel className={`rounded-xl bg-slate-800/50 p-3`}>
+							<div className='space-y-6'>
+								<div className='text-center mb-6'>
+									<h2 className='text-2xl font-bold text-white mb-2'>Community Challenges</h2>
+									<p className='text-gray-400'>Join challenges to boost your impact</p>
+								</div>
+								<ChallengeHub />
+							</div>
 						</Tab.Panel>
 					</Tab.Panels>
 				</Tab.Group>

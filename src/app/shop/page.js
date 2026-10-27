@@ -351,16 +351,18 @@ const ShoppingTracker = () => {
 };
 
 // Add keyframes for fadeIn animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fadeIn {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-`;
-document.head.appendChild(style);
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 export default ShoppingTracker;

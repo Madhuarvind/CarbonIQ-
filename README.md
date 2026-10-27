@@ -1,4 +1,10 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CarbonIQ (Carbo-Tracker)
+
+An AI-powered carbon accounting, predictive analytics, and environmental sustainability platform built with Next.js 15, MongoDB, and Google Gemini.
+
+- **GitHub Repository**: [https://github.com/Madhuarvind/CarbonIQ-.git](https://github.com/Madhuarvind/CarbonIQ-.git)
+
+---
 
 ## Getting Started
 

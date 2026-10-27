@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 import clientPromise from "../../../dbConnect";
 
 // Build leaderboard scores from the `overall` collection
